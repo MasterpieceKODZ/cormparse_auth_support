@@ -13,7 +13,7 @@ app.use(express.json());
 
 const PORT = 3055;
 
-app.use("/", (req, res) => {
+app.get("/", (req, res) => {
 	res.send("Welcome to CORMPARSE AUTHENTICATION SUPPORT SERVICE.");
 });
 
