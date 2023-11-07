@@ -59,6 +59,7 @@ app.post("/test/email-sender", (req, res) => {
 
 	transport.sendMail(
 		{
+			//from: "cormparse@gmail.com",
 			to: "grail.masterpiece@gmail.com",
 			html: htmlMsg,
 			subject: "Cormparse Email Verification",

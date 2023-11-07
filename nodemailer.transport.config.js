@@ -8,7 +8,7 @@ import { google } from "googleapis";
 let clientId;
 let clientSecret;
 let refreshToken;
-let appPW;
+//let appPW;
 
 if (process.env.NODE_ENV == "production") {
 	clientId = fs.readFileSync("/run/secrets/oauth_client_id", "utf8");
@@ -21,7 +21,7 @@ if (process.env.NODE_ENV == "production") {
 	clientId = process.env.OAUTH_CLIENT_ID;
 	clientSecret = process.env.OAUTH_CLIENT_SECRET;
 	refreshToken = process.env.REFRESH_TOKEN;
-	appPW = process.env.GOOGLE_APP_PW;
+	//appPW = process.env.GOOGLE_APP_PW;
 }
 
 // create google oauth2 client
@@ -42,16 +42,16 @@ const transport = nodemailer.createTransport({
 	//host: "smtp.gmail.com",
 	service: "gmail",
 	port: 465,
-	secure: true,
 	from: "cormparse@gmail.com",
+	secure: true,
 	auth: {
 		//type: "OAuth2",
-		user: "cormparse@example.com",
-		pass: appPW,
-		// clientId,
-		// clientSecret,
-		// refreshToken,
-		// accessToken,
+		user: "cormparse@gmail.com",
+		//pass: appPW,
+		clientId,
+		clientSecret,
+		refreshToken,
+		accessToken,
 	},
 });
 
