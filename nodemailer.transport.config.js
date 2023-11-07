@@ -36,7 +36,8 @@ const accessToken = await oauthClient.getAccessToken().catch((e) => {
 });
 
 const transport = nodemailer.createTransport({
-	host: "smtp.gmail.com",
+	//host: "smtp.gmail.com",
+	service: "gmail",
 	port: 465,
 	secure: true,
 	from: "cormparse@gmail.com",
