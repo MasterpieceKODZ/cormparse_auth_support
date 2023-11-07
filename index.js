@@ -13,10 +13,13 @@ app.use(express.json());
 
 const PORT = 3055;
 
+app.use("/", (req, res) => {
+	res.send("Welcome to CORMPARSE AUTHENTICATION SUPPORT SERVICE.");
+});
+
 app.post("/cache/save/email", async (req, res) => {
 	const email = req.body.email;
 
-	console.log("email from body => ", email);
 	let redisEmailKey;
 	let isKeyInUse;
 
@@ -47,10 +50,6 @@ app.post("/cache/save/email", async (req, res) => {
 		});
 });
 
-app.get("/cache/fetch/email/:key", async (req, res) => {
-	const key = req.params.key;
-});
-
 app.post("/test/email-sender", (req, res) => {
 	const key = crypto.randomBytes(16).toString("base64");
 
@@ -77,6 +76,10 @@ app.post("/test/email-sender", (req, res) => {
 			}
 		},
 	);
+});
+
+app.get("/cache/fetch/email/:key", async (req, res) => {
+	const key = req.params.key;
 });
 
 app.listen(PORT, () => {
