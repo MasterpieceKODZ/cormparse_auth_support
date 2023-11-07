@@ -45,7 +45,7 @@ const transport = nodemailer.createTransport({
 	from: "cormparse@gmail.com",
 	secure: true,
 	auth: {
-		//type: "OAuth2",
+		type: "OAuth2",
 		user: "cormparse@gmail.com",
 		//pass: appPW,
 		clientId,
