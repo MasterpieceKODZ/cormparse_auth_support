@@ -11,19 +11,18 @@ const app = express();
 
 app.use(express.json());
 
-const PORT = 3055;
-
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
 	res.send("Welcome to CORMPARSE AUTHENTICATION SUPPORT SERVICE.");
 });
 
 app.post("/cache/save/email", async (req, res) => {
 	const email = req.body.email;
 
+	// generate a random key for redis email cache, and generate a new key if the current key is already in use
+
 	let redisEmailKey;
 	let isKeyInUse;
 
-	// generate a random key for redis email cache, and generate new key if the current key is already in use
 	do {
 		redisEmailKey = crypto.randomBytes(12).toString("base64");
 		isKeyInUse = await redisClient.get(redisEmailKey).catch((e) => {
@@ -34,54 +33,105 @@ app.post("/cache/save/email", async (req, res) => {
 
 	console.log(redisEmailKey, " => ", email);
 
-	redisClient
+	// store email in redis cache db
+	const result = await redisClient
 		.SET(redisEmailKey, email, {
 			NX: true,
 			EX: 17 * 60,
 		})
-		.then((result) => {
-			res.status(200).send(result);
-		})
 		.catch((e) => {
 			console.log("error while saving email to cache.");
 			console.error(e);
-
-			res.status(500).send("unable to save email to cache.");
 		});
+
+	if (result == "OK") {
+		// send verification email
+
+		const expDateTime = new Date(Date.now() + 40 * 60 * 1000);
+		let expMonth;
+		switch (expDateTime.getMonth()) {
+			case 0:
+				expMonth = "JAN";
+				break;
+			case 1:
+				expMonth = "FEB";
+				break;
+			case 2:
+				expMonth = "MAR";
+				break;
+			case 3:
+				expMonth = "APR";
+				break;
+			case 4:
+				expMonth = "MAY";
+				break;
+			case 5:
+				expMonth = "JUN";
+				break;
+			case 6:
+				expMonth = "JUL";
+				break;
+			case 7:
+				expMonth = "AUG";
+				break;
+			case 8:
+				expMonth = "SEPT";
+				break;
+			case 9:
+				expMonth = "OCT";
+				break;
+			case 10:
+				expMonth = "NOV";
+				break;
+			default:
+				expMonth = "DEC";
+		}
+
+		const expString = `${expMonth} ${expDateTime.getDate()}, ${expDateTime.getFullYear()} at ${expDateTime.getHours()}:${expDateTime.getMinutes()}`;
+
+		const continueURL =
+			process.env.NODE_ENV == "production"
+				? "https://cormparse.ddns.net"
+				: "http://localhost:3055";
+
+		const html = fs
+			.readFileSync(`${process.cwd()}/verification.email.html`, "utf8")
+			.replace("{{redis-key}}", redisEmailKey)
+			.replace("{{link-expire-time}}", expString)
+			.replace("{{continue-url}}", continueURL);
+
+		const info = await transport
+			.sendMail({
+				from: '"Cormparse" cormparse@gmail.com',
+				to: email,
+				subject: "Verify Email",
+				html,
+				priority: "high",
+			})
+			.catch((e) => {
+				res.status(500).send("Failed");
+
+				// delete email address from cache if sending verification email fails
+				redisClient.del(redisEmailKey);
+				console.log("email sending failed");
+				console.error(e);
+			});
+
+		if (info.accepted[0]) {
+			console.log(info);
+			res.sendStatus(200);
+		} else {
+			res.status(500).send("address rejected");
+
+			// delete email address from cache if sending verification email fails
+			redisClient.del(redisEmailKey);
+		}
+	} else {
+		res.status(500).send("cache failed");
+	}
 });
 
-app.post("/test/email-sender", (req, res) => {
-	const key = crypto.randomBytes(16).toString("base64");
-
-	const htmlMsg = fs
-		.readFileSync(`${process.cwd()}/testEmail.html`, "utf8")
-		.replace(/{{redis-key}}/, key);
-
-	transport.sendMail(
-		{
-			//from: "cormparse@gmail.com",
-			to: "grail.masterpiece@gmail.com",
-			html: htmlMsg,
-			subject: "Cormparse Email Verification",
-			priority: "high",
-		},
-		(err, info) => {
-			if (err) {
-				console.log("email sending error...");
-				console.error(err);
-
-				res.sendStatus(500);
-			} else if (info) {
-				console.log(info);
-				res.sendStatus(200);
-			}
-		},
-	);
-});
-
-app.get("/cache/fetch/email/:key", async (req, res) => {
-	const key = req.params.key;
-});
+const PORT = 3055;
 
 app.listen(PORT, () => {
 	console.log(`cormparse auth support service listing on port ${PORT}`);
