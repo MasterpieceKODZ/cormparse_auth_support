@@ -24,7 +24,10 @@ app.post("/cache/save/email", async (req, res) => {
 	let isKeyInUse;
 
 	do {
-		redisEmailKey = crypto.randomBytes(12).toString("base64");
+		redisEmailKey = crypto
+			.randomBytes(12)
+			.toString("base64")
+			.replace(/\s/g, "+");
 		isKeyInUse = await redisClient.get(redisEmailKey).catch((e) => {
 			console.log("error on redis key check");
 			console.error(e);
@@ -40,6 +43,7 @@ app.post("/cache/save/email", async (req, res) => {
 			EX: 17 * 60,
 		})
 		.catch((e) => {
+			res.status(500).send("error on cache");
 			console.log("error while saving email to cache.");
 			console.error(e);
 		});
@@ -92,7 +96,7 @@ app.post("/cache/save/email", async (req, res) => {
 		const continueURL =
 			process.env.NODE_ENV == "production"
 				? "https://cormparse.ddns.net"
-				: "http://localhost:3055";
+				: "http://localhost:3000";
 
 		const html = fs
 			.readFileSync(`${process.cwd()}/verification.email.html`, "utf8")
@@ -129,6 +133,20 @@ app.post("/cache/save/email", async (req, res) => {
 	} else {
 		res.status(500).send("cache failed");
 	}
+});
+
+app.post("/create/username-n-pw/new-user", async (req, res) => {
+	const reqBody = req.body;
+
+	const email = await redisClient.get(reqBody.email_key).catch((e) => {
+		res.sendStatus(500);
+		console.log("problem fetching email");
+		console.error(e);
+	});
+
+	console.log(email);
+
+	res.sendStatus(200);
 });
 
 const PORT = 3055;
