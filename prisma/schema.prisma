@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Theme {
+  dark
+  light
+  default
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  email String @unique @db.VarChar(100)
+  firstname String @db.VarChar(50)
+  lastname String @db.VarChar(50)
+  username String @unique @db.VarChar(100)
+  passwordHash String?
+  salt String?
+  photoUrl String?
+  recentIssuesViewed Json[]
+  issuesAssigned Json[]
+  role String? @db.VarChar(50)
+  dateCreated DateTime @default(now())
+  theme Theme? @default(default)
+  teamAsCreator Team[] @relation("teamAsCreator")
+  teamsAsMember Team[] @relation("teamAsMember")
+  teamsAsAdmin Team[] @relation("teamAsAdmin")
+  teamsAsLead Team[] @relation("teamAsLead")
+  projects Project[]
+
+
+  @@index([email])
+  @@index([username])
+}
+
+model Team {
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(50)
+  creator Int
+  lead Int
+  admins User[] @relation("teamAsAdmin")
+  leadRef User @relation("teamAsLead",fields: [lead],references: [id])
+  creatorRef User @relation("teamAsCreator",fields: [creator],references: [id])
+  members User[] @relation("teamAsMember")
+}
+
+model Project {
+  id Int @id @default(autoincrement())
+  creator String
+  creatorRef User @relation(fields: [creator],references: [username])
+}
+

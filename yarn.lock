@@ -5,6 +5,27 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
+"@prisma/client@npm:^5.5.2":
+  version: 5.5.2
+  resolution: "@prisma/client@npm:5.5.2"
+  dependencies:
+    "@prisma/engines-version": "npm:5.5.1-1.aebc046ce8b88ebbcb45efe31cbe7d06fd6abc0a"
+  peerDependencies:
+    prisma: "*"
+  peerDependenciesMeta:
+    prisma:
+      optional: true
+  checksum: cf5356e715279b1d0f03b083665ca85698d9cfa3efcef6d8ed7bd6d2b884f672ea5d61de372ff3d2019c4a39b65297f89bc6b5b9c52be1a8e64d1e561e0180b0
+  languageName: node
+  linkType: hard
+
+"@prisma/engines-version@npm:5.5.1-1.aebc046ce8b88ebbcb45efe31cbe7d06fd6abc0a":
+  version: 5.5.1-1.aebc046ce8b88ebbcb45efe31cbe7d06fd6abc0a
+  resolution: "@prisma/engines-version@npm:5.5.1-1.aebc046ce8b88ebbcb45efe31cbe7d06fd6abc0a"
+  checksum: 5275cd9fcbe22cf14adefa6f794909836965a838c3d506d5fdd25560526d3b0d3023b38dcc8db33cc16bbdea91f0e4bcbe69192610c591672824f4dd1f199ac5
+  languageName: node
+  linkType: hard
+
 "@prisma/engines@npm:5.5.2":
   version: 5.5.2
   resolution: "@prisma/engines@npm:5.5.2"
@@ -194,6 +215,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "cormparse-auth-support@workspace:."
   dependencies:
+    "@prisma/client": "npm:^5.5.2"
     dotenv: "npm:^16.3.1"
     express: "npm:^4.18.2"
     googleapis: "npm:^128.0.0"
