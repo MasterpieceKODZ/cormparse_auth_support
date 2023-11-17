@@ -231,6 +231,29 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 	}
 });
 
+app.post("/get-user-by-email", async (req, res) => {
+	try {
+		const user = await prismaClient.user.findFirst({
+			where: {
+				email: req.body.email,
+			},
+		});
+
+		console.log("user by prisma = ", user);
+
+		if (user) {
+			res.send(user);
+		} else {
+			res.status(404).send("user not found");
+		}
+	} catch (err) {
+		console.log("error on get-user-by-email");
+		console.log(err);
+
+		res.sendStatus(500);
+	}
+});
+
 const PORT = 3055;
 
 app.listen(PORT, () => {

@@ -1,0 +1,13 @@
+[33mb60a028[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m I just added a comment so i can trigger actions workflow (#2)
+[33mc159111[m Merge pull request #1 from MasterpieceKODZ/dev
+[33m9ba758e[m I completed the cache email and new user api endpoints, and i added prisma
+[33m9fa8119[m I switched from global yarn to local
+[33ma1ccece[m i abstracted redis connection credentials to allow fetching data from config files
+[33m5395d57[m changed email transport auth type to OAuth2
+[33me5b539b[m I changed wrong username
+[33mba6ac35[m changed transporter auth to username and password
+[33m63e93a6[m change email transporter config from host to service
+[33ma11c99e[m created google oauth2 client and added refresh and access tokens to email transporter
+[33m2e35a67[m fixed a bug in the home api endpoint, changed app.use to app.get
+[33m70260db[m I add a home api endpoint "/"
+[33m62d42f3[m initial commit
