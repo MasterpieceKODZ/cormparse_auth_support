@@ -20,9 +20,8 @@ app.get("/", async (req, res) => {
 app.post("/cache/save/email", async (req, res) => {
 	const email = req.body.email;
 
-	// check if email has been used by another user
-
 	try {
+		// check if email has been used by another user
 		const emailIsUsed = await prismaClient.user.findFirst({
 			where: {
 				email,
@@ -42,7 +41,7 @@ app.post("/cache/save/email", async (req, res) => {
 		return;
 	}
 
-	// generate a random key for redis email cache, and generate a new key if the current key is already in use
+	// generate a random 12 char base64 string key for redis email cache, and generate a new key if the generated key is already in use
 
 	let redisEmailKey;
 	let isKeyInUse;
@@ -51,7 +50,9 @@ app.post("/cache/save/email", async (req, res) => {
 		redisEmailKey = crypto
 			.randomBytes(12)
 			.toString("base64")
-			.replace(/\s/g, "v");
+			.replace(/\s/g, "v"); // replace all white space in the generated string with letter v
+
+		// check if key is already in use
 		isKeyInUse = await redisClient.get(redisEmailKey).catch((e) => {
 			console.log("error on redis key check");
 			console.error(e);
@@ -60,7 +61,7 @@ app.post("/cache/save/email", async (req, res) => {
 
 	console.log(redisEmailKey, " => ", email);
 
-	// store email in redis cache db
+	// store email in redis cache db with an expiry period of 30 min
 	const result = await redisClient
 		.SET(redisEmailKey, email, {
 			NX: true,
@@ -72,10 +73,13 @@ app.post("/cache/save/email", async (req, res) => {
 			console.error(e);
 		});
 
+	// email successfully saved to redis cache
 	if (result == "OK") {
 		// send verification email
 
 		const expDateTime = new Date(Date.now() + 30 * 60 * 1000);
+
+		// get month of year name
 		let expMonth;
 		switch (expDateTime.getMonth()) {
 			case 0:
@@ -115,12 +119,16 @@ app.post("/cache/save/email", async (req, res) => {
 				expMonth = "DEC";
 		}
 
+		// format expiry date-time string
 		const expString = `${expMonth} ${expDateTime.getDate()}, ${expDateTime.getFullYear()} at ${expDateTime.getHours()}:${expDateTime.getMinutes()}`;
 
+		// frontend service domain
 		const continueURL =
 			process.env.NODE_ENV == "production"
 				? "https://cormparse.ddns.net"
 				: "http://localhost:3000";
+
+		// fetch html email from file and format email template
 
 		const html = fs
 			.readFileSync(`${process.cwd()}/verification.email.html`, "utf8")
@@ -128,6 +136,7 @@ app.post("/cache/save/email", async (req, res) => {
 			.replace("{{link-expire-time}}", expString)
 			.replace("{{continue-url}}", continueURL);
 
+		// send email to user email address
 		const info = await transport
 			.sendMail({
 				from: '"Cormparse" cormparse@gmail.com',
@@ -146,6 +155,7 @@ app.post("/cache/save/email", async (req, res) => {
 			});
 
 		if (info.accepted[0]) {
+			// sending email succeeds
 			console.log(info);
 			res.sendStatus(200);
 		} else {
@@ -155,28 +165,14 @@ app.post("/cache/save/email", async (req, res) => {
 			redisClient.del(redisEmailKey);
 		}
 	} else {
+		// failed to cache email address
 		res.status(500).send("cache failed");
 	}
 });
 
 app.post("/create/username-n-pw/new-user", async (req, res) => {
-	const email = await redisClient.get(req.body.email_key).catch((e) => {
-		res.sendStatus(500);
-		console.log("problem fetching email");
-		console.error(e);
-		return;
-	});
-
-	console.log("email = ", email);
-
-	if (!email) {
-		res.status(404).send("email not found in cache");
-		return;
-	}
-
-	// check username
-
 	try {
+		// check if the provided username is already taken
 		const usernameIsUsed = await prismaClient.user.findFirst({
 			where: {
 				username: req.body.username,
@@ -197,13 +193,14 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 	}
 
 	// create new user
-
 	try {
+		// hash provide password
 		const saltNHash = await hashPassword(req.body.password);
 
+		// insert a new user data into DB
 		const newUser = await prismaClient.user.create({
 			data: {
-				email,
+				email: req.body.email,
 				firstname: req.body.firstname,
 				lastname: req.body.lastname,
 				username: req.body.username,
@@ -218,13 +215,16 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 		console.log("new user = ", newUser);
 
 		if (!newUser) {
+			// user creation failed
 			res.status(500).send("create user failed");
 			return;
 		}
 
+		// user successfully created
 		res.sendStatus(200);
 		console.log("user created successfully");
 	} catch (error) {
+		// error while inserting user data into DB
 		res.status(500).send("error on create user");
 		console.log("error on create user");
 		console.error(error);
@@ -251,6 +251,33 @@ app.post("/get-user-by-email", async (req, res) => {
 		console.log(err);
 
 		res.sendStatus(500);
+	}
+});
+
+app.post("/get-email-from-cache", async (req, res) => {
+	console.log(req.body);
+
+	try {
+		// get email from cache with provided key
+		const email = await redisClient.get(req.body.key);
+
+		console.log("email from cache = ", email);
+		if (email) {
+			res.send(email);
+
+			// remove the email address from cache when you successfully retrieve it, this way verification linlk can only be used once, and it improves cache db storge space management
+
+			redisClient.del(req.body.key).catch((e) => {
+				console.log("error on delete email from cache.");
+				console.error(e);
+			});
+		} else {
+			res.status(400).send("not found");
+		}
+	} catch (err) {
+		res.status(500).send("failed");
+		console.log("error on get-email-from-cache");
+		console.error(err);
 	}
 });
 
