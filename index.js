@@ -22,6 +22,7 @@ app.post("/cache/save/email", async (req, res) => {
 	const email = req.body.email;
 
 	try {
+		// check if email has been used by another user
 		const emailIsUsed = await prismaClient.user.findFirst({
 			where: {
 				email,
@@ -129,11 +130,9 @@ app.post("/cache/save/email", async (req, res) => {
 
 		// frontend service domain
 		const frontendURI =
-			process.env.NODE_ENV == "production"
+          process.env.NODE_ENV == "production"
 				? "https://cormparse.ddns.net"
 				: "http://localhost:3000";
-
-		// fetch html email from file and format email template
 
 		// create continueURL based on email type (verication or password reset)
 		let continueURL;
@@ -187,6 +186,7 @@ app.post("/cache/save/email", async (req, res) => {
 			redisClient.del(redisEmailKey);
 		}
 	} else {
+    
 		// failed to cache email address
 		res.status(500).send("failed");
 	}
