@@ -18,7 +18,6 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/cache/save/email", async (req, res) => {
-	console.log("req body @ /cache/save/email", req.body);
 	const email = req.body.email;
 
 	try {
@@ -36,6 +35,10 @@ app.post("/cache/save/email", async (req, res) => {
 		} else if (!emailIsUsed && req.body.type == "reset_pw") {
 			//during password reset check if there is a user with the provided email address
 			res.status(400).send("faulty email");
+			return;
+		} else if (req.body.type != "reset_pw" && req.body.type != "verification") {
+			// unknown type
+			res.status(400).send("unknown type");
 			return;
 		}
 	} catch (err) {
@@ -56,6 +59,7 @@ app.post("/cache/save/email", async (req, res) => {
 		redisEmailKey = crypto
 			.randomBytes(12)
 			.toString("base64")
+			.replace(/\+/g, "*")
 			.replace(/\s/g, "v"); // replace all white space in the generated string with letter v
 
 		// check if key is already in use
@@ -130,7 +134,7 @@ app.post("/cache/save/email", async (req, res) => {
 
 		// frontend service domain
 		const frontendURI =
-          process.env.NODE_ENV == "production"
+			process.env.NODE_ENV == "production"
 				? "https://cormparse.ddns.net"
 				: "http://localhost:3000";
 
@@ -186,7 +190,6 @@ app.post("/cache/save/email", async (req, res) => {
 			redisClient.del(redisEmailKey);
 		}
 	} else {
-    
 		// failed to cache email address
 		res.status(500).send("failed");
 	}
@@ -217,21 +220,40 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 	// create new user
 	try {
 		// hash provide password
-		const saltNHash = await hashPassword(req.body.password);
+		let saltNHash;
+		if (req.body.password) saltNHash = await hashPassword(req.body.password);
 
-		// insert a new user data into DB
-		const newUser = await prismaClient.user.create({
-			data: {
+		let data;
+
+		if (saltNHash) {
+			// credentials sign in user
+			data = {
 				email: req.body.email,
 				firstname: req.body.firstname,
 				lastname: req.body.lastname,
 				username: req.body.username,
 				role: req.body.role,
-				salt: saltNHash.salt,
-				passwordHash: saltNHash.hash,
+				salt: saltNHash.salt ?? null,
+				passwordHash: saltNHash.hash ?? null,
 				recentIssuesViewed: [],
 				issuesAssigned: [],
-			},
+			};
+		} else {
+			// google sign in user
+			data = {
+				email: req.body.email,
+				firstname: req.body.firstname,
+				lastname: req.body.lastname,
+				username: req.body.username,
+				role: req.body.role,
+				recentIssuesViewed: [],
+				issuesAssigned: [],
+			};
+		}
+
+		// insert a new user data into DB
+		const newUser = await prismaClient.user.create({
+			data,
 		});
 
 		console.log("new user = ", newUser);
@@ -283,7 +305,6 @@ app.post("/get-email-from-cache", async (req, res) => {
 		// get email from cache with provided key
 		const email = await redisClient.get(req.body.key);
 
-		console.log("email from cache = ", email);
 		if (email) {
 			res.send(email);
 
@@ -304,24 +325,30 @@ app.post("/get-email-from-cache", async (req, res) => {
 });
 
 app.post("/reset-password", async (req, res) => {
+	// no need to check if a user with the email address exist beacause that has been checked in the /cache/save/email end-point before the email reset link was sent.
 	const body = req.body;
 
 	const saltNpw = await hashPassword(body.password);
 
-	const setPwRes = await prismaClient.user.update({
-		where: {
-			email: body.email,
-		},
-		data: {
-			passwordHash: saltNpw.hash,
-			salt: saltNpw.salt,
-		},
-	});
+	try {
+		const setPwRes = await prismaClient.user.update({
+			where: {
+				email: body.email,
+				passwordHash: { not: null }, //only permit password reset for account created with credentials and not for google Oauth2 accounts
+			},
+			data: {
+				passwordHash: saltNpw.hash,
+				salt: saltNpw.salt,
+			},
+		});
 
-	if (setPwRes) {
-		res.sendStatus(200);
-	} else {
-		res.sendStatus(500);
+		if (setPwRes) {
+			res.sendStatus(200);
+		} else {
+			res.sendStatus(500);
+		}
+	} catch (err) {
+		res.sendStatus(400);
 	}
 });
 
