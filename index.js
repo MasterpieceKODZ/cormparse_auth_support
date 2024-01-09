@@ -211,7 +211,7 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 	} catch (error) {
 		res.status(500).send("username check failed");
 
-		console.log("username check failed...");
+		console.log("username check failed...".toLo);
 		console.error(err);
 
 		return;
@@ -229,10 +229,10 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 			// credentials sign in user
 			data = {
 				email: req.body.email,
-				firstname: req.body.firstname,
-				lastname: req.body.lastname,
-				username: req.body.username,
-				role: req.body.role,
+				firstname: req.body.firstname.toLowerCase(),
+				lastname: req.body.lastname.toLowerCase(),
+				username: req.body.username.toLowerCase(),
+				role: req.body.role.toLowerCase(),
 				salt: saltNHash.salt ?? null,
 				passwordHash: saltNHash.hash ?? null,
 				recentIssuesViewed: [],
@@ -242,10 +242,10 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 			// google sign in user
 			data = {
 				email: req.body.email,
-				firstname: req.body.firstname,
-				lastname: req.body.lastname,
-				username: req.body.username,
-				role: req.body.role,
+				firstname: req.body.firstname.toLowerCase(),
+				lastname: req.body.lastname.toLowerCase(),
+				username: req.body.username.toLowerCase(),
+				role: req.body.role.toLowerCase(),
 				recentIssuesViewed: [],
 				issuesAssigned: [],
 			};
