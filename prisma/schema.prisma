@@ -10,14 +10,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Theme {
-  dark
-  light
-  default
-}
-
 model User {
-  id Int @id @default(autoincrement())
+  id Int @id @default(autoincrement()) 
   email String @unique @db.VarChar(100)
   firstname String @db.VarChar(50)
   lastname String @db.VarChar(50)
@@ -29,32 +23,143 @@ model User {
   issuesAssigned Json[]
   role String? @db.VarChar(50)
   dateCreated DateTime @default(now())
-  theme Theme? @default(default)
-  teamAsCreator Team[] @relation("teamAsCreator")
-  teamsAsMember Team[] @relation("teamAsMember")
-  teamsAsAdmin Team[] @relation("teamAsAdmin")
-  teamsAsLead Team[] @relation("teamAsLead")
-  projects Project[]
+  projectsAsCreator Project[] @relation("projectCreator")
+  projectAsMember Project[] @relation("projectMember")
+  projectAsAdmin Project[] @relation("projectAdmin")
+  projectLead Project[] @relation("projectLead")
+  projectsDefaultAssignee Project[] @relation("projectDefaultAssignee")
+  assignedIssues Issue[] @relation("issueAssignee")
+  reportedIssues Issue[] @relation("issueReported")
+  comments Comment[]
+  activities Activity[]
 
 
   @@index([email])
   @@index([username])
 }
 
-model Team {
-  id Int @id @default(autoincrement())
-  name String @db.VarChar(50)
-  creator Int
-  lead Int
-  admins User[] @relation("teamAsAdmin")
-  leadRef User @relation("teamAsLead",fields: [lead],references: [id])
-  creatorRef User @relation("teamAsCreator",fields: [creator],references: [id])
-  members User[] @relation("teamAsMember")
-}
-
 model Project {
   id Int @id @default(autoincrement())
+  name String @db.VarChar(30)
+  description String @db.Text
+  key String @db.VarChar(10)
+  url String @db.VarChar(150)
   creator String
-  creatorRef User @relation(fields: [creator],references: [username])
+  creatorRef User @relation( "projectMember", fields: [creator],references: [username])
+  people User[] @relation("projectCreator")
+  admins User[] @relation("projectAdmin")
+  lead String
+  leadRef User @relation("projectLead", fields: [lead], references: [username])
+  defaultAssignee String
+  defaultAssigneeRef User @relation("projectDefaultAssignee", fields: [defaultAssignee], references: [username])
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  issues Issue[]
+  
+
+
+  @@index([name,key])
+  @@index([key])
+  @@index([creator])
+  @@index([lead])
 }
 
+
+model Issue {
+  id Int @id @default(autoincrement())
+  summary String @db.VarChar(150)
+  key String @db.VarChar(15)
+  description String @db.Text
+  type IssueType
+  priority Priority
+  status String
+  tags String[]
+  attachments Json
+  assignee String
+  assigneeRef User @relation("issueAssignee", fields: [assignee], references: [username])
+  reporter String
+  reporterRef User @relation("issueReported", fields: [reporter], references: [username])
+  project Int
+  projectRef Project @relation(fields: [project], references: [id])
+  parentIssue Int
+  parentIssueRef Issue @relation("linkedIssue", fields: [parentIssue], references: [id])
+  childIssues Issue[] @relation("linkedIssue")
+  superIssue Int
+  superIssueRef Issue @relation("issuesSubtask", fields: [superIssue], references: [id])
+  subTasks Issue[] @relation("issuesSubtask")
+  reportedAt DateTime @default(now()) 
+  dueDate DateTime
+  updatedAt DateTime
+  comments Comment[]
+  activities Activity[]
+
+
+
+
+  @@index([key])
+  @@index([type])
+  @@index([status])
+  @@index([priority])
+  @@index([reporter])
+  @@index([assignee])
+
+}
+
+enum  IssueLinkType {
+  child
+  parent
+}
+
+enum Priority {
+  highest
+  high
+  mid
+  low
+}
+
+enum IssueType {
+  improvement
+  task
+  sub_task
+  bug
+  feature
+	@@map("Type")
+}
+
+model Comment {
+  id Int @id @default(autoincrement())
+  author String
+  authorRef User @relation( fields: [author],references: [username])
+  content String @db.Text
+  postedAt DateTime
+  isReply Boolean?
+  replyTo Int?
+  replyToRef Comment? @relation("commentReply",fields: [replyTo],references: [id])
+  repliedBy Comment[] @relation("commentReply")
+  likes Int @default(0)
+  unlikes Int @default(0)
+  issue Int
+  issueRef Issue @relation(fields: [issue], references: [id])
+  activity Activity?
+
+}
+
+model Activity {
+  id Int @id @default(autoincrement())
+  action ActivityAction
+  description String @db.Text
+  comment Int? @unique
+  commentRef Comment? @relation(fields: [comment], references: [id])
+  actor String
+  actorRef User @relation(fields: [actor], references: [username])
+  issue Int
+  issueRef Issue @relation(fields: [issue],references: [id])
+
+  @@index([actor])
+  @@index([comment])
+}
+
+enum ActivityAction {
+  comment
+  update
+}
