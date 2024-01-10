@@ -3,7 +3,7 @@ if (process.env.NODE_ENV != "production") dotenv.config();
 import { createClient } from "redis";
 import fs from "fs";
 
-// get redis password from container or secrets file
+// get redis password from container env or secrets file
 
 let redisDBPassword;
 

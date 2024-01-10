@@ -219,7 +219,7 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 
 	// create new user
 	try {
-		// hash provide password
+		// hash the provided password
 		let saltNHash;
 		if (req.body.password) saltNHash = await hashPassword(req.body.password);
 
@@ -232,11 +232,10 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 				firstname: req.body.firstname.toLowerCase(),
 				lastname: req.body.lastname.toLowerCase(),
 				username: req.body.username.toLowerCase(),
-				role: req.body.role.toLowerCase(),
+				role: req.body.role.toLowerCase() ?? null,
 				salt: saltNHash.salt ?? null,
 				passwordHash: saltNHash.hash ?? null,
-				recentIssuesViewed: [],
-				issuesAssigned: [],
+				recentIssues: [],
 			};
 		} else {
 			// google sign in user
@@ -245,9 +244,8 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 				firstname: req.body.firstname.toLowerCase(),
 				lastname: req.body.lastname.toLowerCase(),
 				username: req.body.username.toLowerCase(),
-				role: req.body.role.toLowerCase(),
-				recentIssuesViewed: [],
-				issuesAssigned: [],
+				role: req.body.role.toLowerCase() ?? null,
+				recentIssues: [],
 			};
 		}
 

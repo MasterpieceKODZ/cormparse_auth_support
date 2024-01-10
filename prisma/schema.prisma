@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-  id Int @id @default(autoincrement()) 
+  id Int @id @default(autoincrement())
   email String @unique @db.VarChar(100)
   firstname String @db.VarChar(50)
   lastname String @db.VarChar(50)
@@ -19,16 +19,15 @@ model User {
   passwordHash String?
   salt String?
   photoUrl String?
-  recentIssuesViewed Json[]
-  issuesAssigned Json[]
+  recentIssues Json[]
+  assignedIssues Issue[] @relation("issueAssignee")
   role String? @db.VarChar(50)
   dateCreated DateTime @default(now())
   projectsAsCreator Project[] @relation("projectCreator")
-  projectAsMember Project[] @relation("projectMember")
-  projectAsAdmin Project[] @relation("projectAdmin")
-  projectLead Project[] @relation("projectLead")
-  projectsDefaultAssignee Project[] @relation("projectDefaultAssignee")
-  assignedIssues Issue[] @relation("issueAssignee")
+  projectsAsMember Project[] @relation("projectMember")
+  projectsAsAdmin Project[] @relation("projectAdmin")
+  projectsAsLead Project[] @relation("projectLead")
+  projectsAsDefaultAssignee Project[] @relation("projectDefaultAssignee")
   reportedIssues Issue[] @relation("issueReported")
   comments Comment[]
   activities Activity[]
@@ -45,13 +44,13 @@ model Project {
   key String @db.VarChar(10)
   url String @db.VarChar(150)
   creator String
-  creatorRef User @relation( "projectMember", fields: [creator],references: [username])
-  people User[] @relation("projectCreator")
+  creatorRef User @relation( "projectCreator", fields: [creator],references: [email])
+  people User[] @relation("projectMember")
   admins User[] @relation("projectAdmin")
   lead String
-  leadRef User @relation("projectLead", fields: [lead], references: [username])
+  leadRef User @relation("projectLead", fields: [lead], references: [email])
   defaultAssignee String
-  defaultAssigneeRef User @relation("projectDefaultAssignee", fields: [defaultAssignee], references: [username])
+  defaultAssigneeRef User @relation("projectDefaultAssignee", fields: [defaultAssignee], references: [email])
   createdAt DateTime @default(now())
   updatedAt DateTime
   issues Issue[]
@@ -74,11 +73,11 @@ model Issue {
   priority Priority
   status String
   tags String[]
-  attachments Json
+  attachments Json[]
   assignee String
-  assigneeRef User @relation("issueAssignee", fields: [assignee], references: [username])
+  assigneeRef User @relation("issueAssignee", fields: [assignee], references: [email])
   reporter String
-  reporterRef User @relation("issueReported", fields: [reporter], references: [username])
+  reporterRef User @relation("issueReported", fields: [reporter], references: [email])
   project Int
   projectRef Project @relation(fields: [project], references: [id])
   parentIssue Int
@@ -129,7 +128,7 @@ enum IssueType {
 model Comment {
   id Int @id @default(autoincrement())
   author String
-  authorRef User @relation( fields: [author],references: [username])
+  authorRef User @relation( fields: [author],references: [email])
   content String @db.Text
   postedAt DateTime
   isReply Boolean?
@@ -151,7 +150,7 @@ model Activity {
   comment Int? @unique
   commentRef Comment? @relation(fields: [comment], references: [id])
   actor String
-  actorRef User @relation(fields: [actor], references: [username])
+  actorRef User @relation(fields: [actor], references: [email])
   issue Int
   issueRef Issue @relation(fields: [issue],references: [id])
 
