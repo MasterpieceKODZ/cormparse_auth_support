@@ -211,7 +211,7 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 	} catch (error) {
 		res.status(500).send("username check failed");
 
-		console.log("username check failed...");
+		console.log("username check failed...".toLo);
 		console.error(err);
 
 		return;
@@ -266,6 +266,7 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 				};
 			}
 		}
+
 
 		// insert a new user data into DB
 		const newUser = await prismaClient.user.create({
