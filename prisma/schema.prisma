@@ -19,7 +19,7 @@ model User {
   passwordHash String?
   salt String?
   photoUrl String?
-  recentIssues Json[]
+  recentIssues Issue[] @relation("recentIssuesBtActivity")
   assignedIssues Issue[] @relation("issueAssignee")
   role String? @db.VarChar(50)
   dateCreated DateTime @default(now())
@@ -30,7 +30,7 @@ model User {
   projectsAsDefaultAssignee Project[] @relation("projectDefaultAssignee")
   reportedIssues Issue[] @relation("issueReported")
   comments Comment[]
-  activities Activity[]
+  activities Update[]
 
 
   @@index([email])
@@ -40,19 +40,19 @@ model User {
 model Project {
   id Int @id @default(autoincrement())
   name String @db.VarChar(30)
-  description String @db.Text
+  description String? @db.Text
   key String @db.VarChar(10)
-  url String @db.VarChar(150)
+  url String? @db.VarChar(150)
   creator String
-  creatorRef User @relation( "projectCreator", fields: [creator],references: [email])
+  creatorRef User @relation( "projectCreator", fields: [creator],references: [email], onDelete: Restrict)
   people User[] @relation("projectMember")
   admins User[] @relation("projectAdmin")
   lead String
-  leadRef User @relation("projectLead", fields: [lead], references: [email])
-  defaultAssignee String
-  defaultAssigneeRef User @relation("projectDefaultAssignee", fields: [defaultAssignee], references: [email])
+  leadRef User @relation("projectLead", fields: [lead], references: [email], onDelete: Restrict)
+  defaultAssignee String?
+  defaultAssigneeRef User? @relation("projectDefaultAssignee", fields: [defaultAssignee], references: [email],onDelete: SetNull)
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime?
   issues Issue[]
   
 
@@ -69,28 +69,29 @@ model Issue {
   summary String @db.VarChar(150)
   key String @db.VarChar(15)
   description String @db.Text
-  type IssueType
-  priority Priority
-  status String
+  type String
+  priority String
+  status String @default("to-do")
   tags String[]
   attachments Json[]
-  assignee String
-  assigneeRef User @relation("issueAssignee", fields: [assignee], references: [email])
+  assignee String?
+  assigneeRef User? @relation("issueAssignee", fields: [assignee], references: [email],onDelete: SetNull)
   reporter String
-  reporterRef User @relation("issueReported", fields: [reporter], references: [email])
+  reporterRef User @relation("issueReported", fields: [reporter], references: [email], onDelete: NoAction)
   project Int
   projectRef Project @relation(fields: [project], references: [id])
-  parentIssue Int
-  parentIssueRef Issue @relation("linkedIssue", fields: [parentIssue], references: [id])
+  parentIssue Int?
+  parentIssueRef Issue? @relation("linkedIssue", fields: [parentIssue], references: [id], onDelete: Cascade)
   childIssues Issue[] @relation("linkedIssue")
-  superIssue Int
-  superIssueRef Issue @relation("issuesSubtask", fields: [superIssue], references: [id])
+  superIssue Int?
+  superIssueRef Issue? @relation("issuesSubtask", fields: [superIssue], references: [id], onDelete: Cascade)
   subTasks Issue[] @relation("issuesSubtask")
   reportedAt DateTime @default(now()) 
-  dueDate DateTime
-  updatedAt DateTime
+  dueDate DateTime?
+  updatedAt DateTime?
   comments Comment[]
-  activities Activity[]
+  activities Update[]
+  recentActors User[] @relation("recentIssuesBtActivity")
 
 
 
@@ -104,61 +105,30 @@ model Issue {
 
 }
 
-enum  IssueLinkType {
-  child
-  parent
-}
-
-enum Priority {
-  highest
-  high
-  mid
-  low
-}
-
-enum IssueType {
-  improvement
-  task
-  sub_task
-  bug
-  feature
-	@@map("Type")
-}
-
 model Comment {
   id Int @id @default(autoincrement())
   author String
-  authorRef User @relation( fields: [author],references: [email])
+  authorRef User @relation( fields: [author],references: [email], onDelete: Cascade)
   content String @db.Text
   postedAt DateTime
   isReply Boolean?
   replyTo Int?
-  replyToRef Comment? @relation("commentReply",fields: [replyTo],references: [id])
+  replyToRef Comment? @relation("commentReply",fields: [replyTo],references: [id], onDelete: Cascade)
   repliedBy Comment[] @relation("commentReply")
   likes Int @default(0)
   unlikes Int @default(0)
   issue Int
-  issueRef Issue @relation(fields: [issue], references: [id])
-  activity Activity?
+  issueRef Issue @relation(fields: [issue], references: [id], onDelete: Cascade)
 
 }
 
-model Activity {
+model Update {
   id Int @id @default(autoincrement())
-  action ActivityAction
   description String @db.Text
-  comment Int? @unique
-  commentRef Comment? @relation(fields: [comment], references: [id])
   actor String
-  actorRef User @relation(fields: [actor], references: [email])
+  actorRef User @relation(fields: [actor], references: [email], onDelete: Cascade)
   issue Int
-  issueRef Issue @relation(fields: [issue],references: [id])
+  issueRef Issue @relation(fields: [issue],references: [id], onDelete: Cascade)
 
   @@index([actor])
-  @@index([comment])
-}
-
-enum ActivityAction {
-  comment
-  update
 }
