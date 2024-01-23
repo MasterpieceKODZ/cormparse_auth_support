@@ -219,7 +219,7 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 
 	// create new user
 	try {
-		// hash provide password
+		// hash the provided password
 		let saltNHash;
 		if (req.body.password) saltNHash = await hashPassword(req.body.password);
 
@@ -227,29 +227,46 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 
 		if (saltNHash) {
 			// credentials sign in user
-			data = {
-				email: req.body.email,
-				firstname: req.body.firstname.toLowerCase(),
-				lastname: req.body.lastname.toLowerCase(),
-				username: req.body.username.toLowerCase(),
-				role: req.body.role.toLowerCase(),
-				salt: saltNHash.salt ?? null,
-				passwordHash: saltNHash.hash ?? null,
-				recentIssuesViewed: [],
-				issuesAssigned: [],
-			};
+			if (req.body.role) {
+				data = {
+					email: req.body.email,
+					firstname: req.body.firstname.toLowerCase(),
+					lastname: req.body.lastname.toLowerCase(),
+					username: req.body.username.toLowerCase(),
+					role: req.body.role.toLowerCase(),
+					salt: saltNHash.salt ?? null,
+					passwordHash: saltNHash.hash ?? null,
+				};
+			} else {
+				data = {
+					email: req.body.email,
+					firstname: req.body.firstname.toLowerCase(),
+					lastname: req.body.lastname.toLowerCase(),
+					username: req.body.username.toLowerCase(),
+					salt: saltNHash.salt ?? null,
+					passwordHash: saltNHash.hash ?? null,
+				};
+			}
 		} else {
 			// google sign in user
-			data = {
-				email: req.body.email,
-				firstname: req.body.firstname.toLowerCase(),
-				lastname: req.body.lastname.toLowerCase(),
-				username: req.body.username.toLowerCase(),
-				role: req.body.role.toLowerCase(),
-				recentIssuesViewed: [],
-				issuesAssigned: [],
-			};
+			if (req.body.role) {
+				data = {
+					email: req.body.email,
+					firstname: req.body.firstname.toLowerCase(),
+					lastname: req.body.lastname.toLowerCase(),
+					username: req.body.username.toLowerCase(),
+					role: req.body.role.toLowerCase(),
+				};
+			} else {
+				data = {
+					email: req.body.email,
+					firstname: req.body.firstname.toLowerCase(),
+					lastname: req.body.lastname.toLowerCase(),
+					username: req.body.username.toLowerCase(),
+				};
+			}
 		}
+
 
 		// insert a new user data into DB
 		const newUser = await prismaClient.user.create({
