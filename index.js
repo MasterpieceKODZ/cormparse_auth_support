@@ -6,7 +6,7 @@ import redisClient from "./connect.to.redis.js";
 import crypto from "crypto";
 import fs from "fs";
 import transport from "./nodemailer.transport.config.js";
-import { prismaClient } from "./prisma/client.js";
+import prismaClient from "./prisma/client.js";
 import { hashPassword } from "./secure.password.js";
 
 const app = express();
@@ -32,11 +32,18 @@ app.post("/cache/save/email", async (req, res) => {
 		if (emailIsUsed && req.body.type == "verification") {
 			res.status(400).send("faulty email");
 			return;
-		} else if (!emailIsUsed && req.body.type == "reset_pw") {
+		} else if (
+			!emailIsUsed &&
+			(req.body.type == "reset_pw" || req.body.type == "del_usr")
+		) {
 			//during password reset check if there is a user with the provided email address
 			res.status(400).send("faulty email");
 			return;
-		} else if (req.body.type != "reset_pw" && req.body.type != "verification") {
+		} else if (
+			req.body.type != "reset_pw" &&
+			req.body.type != "verification" &&
+			req.body.type != "del_usr"
+		) {
 			// unknown type
 			res.status(400).send("unknown type");
 			return;
@@ -133,10 +140,7 @@ app.post("/cache/save/email", async (req, res) => {
 		const expString = `${expMonth} ${expDateTime.getDate()}, ${expDateTime.getFullYear()} at ${expDateTime.getHours()}:${expDateTime.getMinutes()}`;
 
 		// frontend service domain
-		const frontendURI =
-			process.env.NODE_ENV == "production"
-				? "https://cormparse.ddns.net"
-				: "http://localhost:3000";
+		const frontendURI = process.env.FRONTEND_URI ?? "http://localhost:3000";
 
 		// create continueURL based on email type (verication or password reset)
 		let continueURL;
@@ -145,12 +149,16 @@ app.post("/cache/save/email", async (req, res) => {
 			continueURL = frontendURI + "/auth/finish-email-signup";
 		} else if (req.body.type == "reset_pw") {
 			continueURL = frontendURI + "/auth/reset-password";
+		} else if (req.body.type == "del_usr") {
+			continueURL = frontendURI + "/auth/delete-user";
 		}
 
 		// select email message based on type
 		const emailHTML =
 			req.body.type == "verification"
 				? `${process.cwd()}/verification.email.html`
+				: req.body.type == "del_usr"
+				? `${process.cwd()}/delete.user.email.html`
 				: `${process.cwd()}/password.reset.html`;
 
 		// populate email template
@@ -166,7 +174,11 @@ app.post("/cache/save/email", async (req, res) => {
 				from: '"Cormparse" cormparse@gmail.com',
 				to: email,
 				subject:
-					req.body.type == "verification" ? "Verify Email" : "Reset Password",
+					req.body.type == "verification"
+						? "Verify Email"
+						: req.body.type == "del_usr"
+						? "Delete My Cormparse Account"
+						: "Reset Password",
 				html,
 				priority: "high",
 			})
@@ -208,7 +220,7 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 			res.status(400).send("username taken");
 			return;
 		}
-	} catch (error) {
+	} catch (err) {
 		res.status(500).send("username check failed");
 
 		console.log("username check failed...".toLo);
@@ -266,7 +278,6 @@ app.post("/create/username-n-pw/new-user", async (req, res) => {
 				};
 			}
 		}
-
 
 		// insert a new user data into DB
 		const newUser = await prismaClient.user.create({

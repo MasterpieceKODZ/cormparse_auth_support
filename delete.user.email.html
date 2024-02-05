@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0" />
+		<title>Delete Account</title>
+	</head>
+	<body style="padding: 10px">
+		<img
+			src="https://i.postimg.cc/tRLPw4fN/logo.png"
+			alt="logo"
+			style="display: block; margin-top: 10px; width: 150px; height: auto" />
+
+		<h3 style="margin-top: 50px">Delete Account</h3>
+		<p style="margin-top: 8px">
+			click on the button below to delete your account
+		</p>
+		<br />
+
+		<a
+			href="{{continue-url}}?key={{redis-key}}"
+			target="_blank"
+			style="
+				width: fit-content;
+				height: fit-content;
+				padding-left: 15px;
+				padding-right: 15px;
+				padding-top: 7px;
+				padding-bottom: 7px;
+				text-align: center;
+				color: white;
+				background-color: rgb(43, 43, 245);
+				border-radius: 5px;
+				text-decoration: none;
+			"
+			><strong>DELETE MY ACCOUNT</strong></a
+		>
+		<br /><br />
+		<p style="color: red">
+			Note: this delete account link expires at {{link-expire-time}} and can
+			only be used once.
+		</p>
+		<br /><br />
+		<p style="color: rgb(255, 151, 54)">do not reply to this email.</p>
+	</body>
+</html>

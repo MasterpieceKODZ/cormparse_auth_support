@@ -19,7 +19,7 @@ model User {
   passwordHash String?
   salt String?
   photoUrl String?
-  recentIssues Issue[] @relation("recentIssuesBtActivity")
+  recentIssues Issue[] @relation("recentIssuesByActivity")
   assignedIssues Issue[] @relation("issueAssignee")
   role String? @db.VarChar(50)
   dateCreated DateTime @default(now())
@@ -34,6 +34,7 @@ model User {
 
   @@index([email])
   @@index([username])
+
 }
 
 model Project {
@@ -52,12 +53,17 @@ model Project {
   defaultAssigneeRef User? @relation("projectDefaultAssignee", fields: [defaultAssignee], references: [email],onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime?
-  issues Issue[]
+  issues Issue[] @relation("projectIssues")
 
   @@index([name,key])
   @@index([key])
   @@index([creator])
   @@index([lead])
+
+
+    @@unique([creator, key])
+    @@unique([creator, name])
+
 }
 
 
@@ -76,7 +82,7 @@ model Issue {
   reporter String
   reporterRef User @relation("issueReported", fields: [reporter], references: [email], onDelete: NoAction)
   project Int
-  projectRef Project @relation(fields: [project], references: [id])
+  projectRef Project @relation( "projectIssues",fields: [project], references: [id], onDelete: Cascade)
   parentIssue Int?
   parentIssueRef Issue? @relation("linkedIssue", fields: [parentIssue], references: [id], onDelete: Cascade)
   childIssues Issue[] @relation("linkedIssue")
@@ -88,7 +94,7 @@ model Issue {
   updatedAt DateTime?
   comments Comment[]
   activities Update[]
-  recentActors User[] @relation("recentIssuesBtActivity")
+  recentActors User[] @relation("recentIssuesByActivity")
   @@index([key])
   @@index([type])
   @@index([status])
@@ -96,6 +102,7 @@ model Issue {
   @@index([reporter])
   @@index([assignee])
 
+  @@unique([project,key])
 }
 
 model Comment {
